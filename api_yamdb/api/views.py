@@ -12,7 +12,10 @@ from .serializers import (
     ReviewSerializer, CommentSerializer, UserSerializer,
     GenreSerializer, CategorySerializer, TitleSerializer
 )
-from .permissions import IsAuthorModeratorAdminOrReadOnly, IsAdmin
+from .permissions import (
+    IsAuthorModeratorAdminOrReadOnly,
+    IsAdmin, IsAdminOrReadOnly
+)
 
 
 class CreateListViewSet(mixins.CreateModelMixin,
@@ -57,14 +60,16 @@ class UserMe(APIView):
 class GenreViewSet(CreateListViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
-
+    lookup_field = 'slug'
     search_fields = ['name', ]
 
 
 class CategoryViewSet(CreateListViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     lookup_field = 'slug'
     search_fields = ['name', ]
