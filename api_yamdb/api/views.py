@@ -5,21 +5,20 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
 from .models import (
-  Review, Title, User,
-  Genre, Category, Title
+    Review, Title, User,
+    Genre, Category, Title
 )
 from .serializers import (
-  ReviewSerializer, CommentSerializer, UserSerializer,
-  GenreSerializer, CategorySerializer, TitleSerializer
+    ReviewSerializer, CommentSerializer, UserSerializer,
+    GenreSerializer, CategorySerializer, TitleSerializer
 )
 from .permissions import IsAuthorModeratorAdminOrReadOnly, IsAdmin
 
 
-class CreateListViewSet(mixins.CreateModelMixin, 
+class CreateListViewSet(mixins.CreateModelMixin,
                         mixins.ListModelMixin,
                         mixins.DestroyModelMixin,
-                        viewsets.GenericViewSet
-):
+                        viewsets.GenericViewSet):
     pass
 
 
@@ -53,8 +52,8 @@ class UserMe(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-          
-          
+
+
 class GenreViewSet(CreateListViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
