@@ -17,7 +17,6 @@ class User(AbstractUser):
         'Роль пользователя', max_length=10,
         choices=USER_ROLE, default='user'
     )
-    username = models.CharField('Имя пользователя', max_length=50, blank=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username',)

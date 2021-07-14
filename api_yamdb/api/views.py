@@ -1,16 +1,60 @@
-import django_filters.rest_framework
-from rest_framework import filters, mixins, viewsets
+from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, status, filters, mixins
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
-from .serializers import GenreSerializer, CategorySerializer, TitleSerializer
-from .models import Genre, Category, Title
+from .models import (
+  Review, Title, User,
+  Genre, Category, Title
+)
+from .serializers import (
+  ReviewSerializer, CommentSerializer, UserSerializer,
+  GenreSerializer, CategorySerializer, TitleSerializer
+)
+from .permissions import IsAuthorModeratorAdminOrReadOnly, IsAdmin
 
 
-class CreateListViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
-                        viewsets.GenericViewSet,
-                        mixins.DestroyModelMixin):
+class CreateListViewSet(mixins.CreateModelMixin, 
+                        mixins.ListModelMixin,
+                        mixins.DestroyModelMixin,
+                        viewsets.GenericViewSet
+):
     pass
 
 
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'username'
+    permission_classes = [IsAdmin]
+    pagination_class = PageNumberPagination
+
+
+class UserMe(APIView):
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                'Вам нужно авторизоваться!',
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                'Вам нужно авторизоваться!',
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+          
+          
 class GenreViewSet(CreateListViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
@@ -35,3 +79,31 @@ class CategoryViewSet(CreateListViewSet):
 
 #     def perform_create(self, serializer):
 #         serializer.save(author=self.request.user)
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthorModeratorAdminOrReadOnly]
+    pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        title = get_object_or_404(Title, id=self.kwargs['title_id'])
+        return title.reviews.all()
+
+    def perform_create(self, serializer):
+        title = get_object_or_404(Title, id=self.kwargs['title_id'])
+        serializer.save(author=self.request.user, title=title)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthorModeratorAdminOrReadOnly]
+    pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        review = get_object_or_404(Review, id=self.kwargs['review_id'])
+        return review.comments.all()
+
+    def perform_create(self, serializer):
+        review = get_object_or_404(Review, id=self.kwargs['review_id'])
+        serializer.save(author=self.request.user, review=review)
