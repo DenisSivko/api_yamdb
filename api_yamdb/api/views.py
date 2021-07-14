@@ -1,12 +1,26 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters, mixins
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
-from .models import Review, Title, User
-from .serializers import ReviewSerializer, CommentSerializer, UserSerializer
+from .models import (
+  Review, Title, User,
+  Genre, Category, Title
+)
+from .serializers import (
+  ReviewSerializer, CommentSerializer, UserSerializer,
+  GenreSerializer, CategorySerializer, TitleSerializer
+)
 from .permissions import IsAuthorModeratorAdminOrReadOnly, IsAdmin
+
+
+class CreateListViewSet(mixins.CreateModelMixin, 
+                        mixins.ListModelMixin,
+                        mixins.DestroyModelMixin,
+                        viewsets.GenericViewSet
+):
+    pass
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -39,6 +53,32 @@ class UserMe(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+          
+          
+class GenreViewSet(CreateListViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    filter_backends = [filters.SearchFilter]
+
+    search_fields = ['name', ]
+
+
+class CategoryViewSet(CreateListViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    filter_backends = [filters.SearchFilter]
+    lookup_field = 'slug'
+    search_fields = ['name', ]
+
+
+# class TitleViewSet(viewsets.ModelViewSet):
+#     queryset = Title.objects.all()
+#     serializer_class = TitleSerializer
+#     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
+#     filterset_fields = ['genre', 'category', ]
+
+#     def perform_create(self, serializer):
+#         serializer.save(author=self.request.user)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

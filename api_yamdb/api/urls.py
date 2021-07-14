@@ -1,7 +1,11 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import ReviewViewSet, CommentViewSet, UserViewSet, UserMe
+
+from .views import (
+  ReviewViewSet, CommentViewSet, UserViewSet,
+  UserMe, GenreViewSet, CategoryViewSet
+)
 
 router_v1 = DefaultRouter()
 # router_v1.register(
@@ -20,14 +24,14 @@ router_v1.register(
     'users',
     UserViewSet, basename='user'
 )
-# router_v1.register(
-#     'genres',
-#     "GenreViewSet", basename='genre'
-# )
-# router_v1.register(
-#     'categories',
-#     "CategoryViewSet", basename='category'
-# )
+router_v1.register(
+    'genres',
+    GenreViewSet, basename='genre'
+)
+router_v1.register(
+    'categories',
+    CategoryViewSet, basename='category'
+)
 
 urlpatterns = [
     path('v1/users/me/', UserMe.as_view()),
