@@ -16,6 +16,7 @@ class User(AbstractUser):
         'Роль пользователя', max_length=10,
         choices=USER_ROLE, default='user'
     )
+    confirmation_code = models.CharField(max_length=8, default='00000000')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username',)

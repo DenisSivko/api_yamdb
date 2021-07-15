@@ -1,9 +1,29 @@
 from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
+from rest_framework_simplejwt.tokens import AccessToken
+from django.core.mail import send_mail
+import random
+import string
+
+
+from .models import (
+    Review, Title, User,
+    Genre, Category, Title
+)
+from .serializers import (
+    ReviewSerializer, CommentSerializer,
+    UserSerializer, GenreSerializer, CategorySerializer,
+    TitleReadSerializer, TitleWriteSerializer,
+    EmailSerializer, TokenSerializer
+)
+from .permissions import (
+    IsAuthorModeratorAdminOrReadOnly,
+    IsAdmin, IsAdminOrReadOnly
+)
 
 from .filters import TitleFilter
 from .models import Category, Comment, Genre, Review, Title, User
@@ -20,6 +40,66 @@ class CreateListViewSet(mixins.CreateModelMixin,
                         mixins.DestroyModelMixin,
                         viewsets.GenericViewSet):
     pass
+
+
+def create_username_from_email(email):
+    return email.split('@')[0]
+
+
+class SendConfirmationCode(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = EmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data.get('email')
+        confirmation_code = ''.join(
+            [random.choice(
+                string.ascii_letters + string.digits
+            ) for n in range(8)]
+        )
+        User.objects.create(
+            email=email, confirmation_code=confirmation_code,
+            username=create_username_from_email(email),
+            is_active=False
+        )
+        send_mail(
+            'Код подтверждения Yamdb',
+            f'Ваш код подтверждения: {confirmation_code}',
+            'admin@yamdb.ru',
+            [email]
+        )
+        return Response(
+            'Код подтверждения успешно отправлен!',
+            status=status.HTTP_200_OK
+        )
+
+
+class SendJwtToken(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = TokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data.get('email')
+        confirmation_code = serializer.validated_data.get(
+            'confirmation_code'
+        )
+        if not User.objects.filter(
+            email=email, confirmation_code=confirmation_code
+        ).exists():
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        user = User.objects.get(
+            email=email, confirmation_code=confirmation_code
+        )
+        user.is_active = True
+        user.save()
+        token = AccessToken.for_user(user)
+        return Response(
+            f'token: {token}', status=status.HTTP_200_OK
+        )
 
 
 class UserViewSet(viewsets.ModelViewSet):
