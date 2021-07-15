@@ -70,3 +70,19 @@ class TitleWriteSerializer(serializers.ModelSerializer):
             'id', 'name', 'year', 'description', 'genre', 'category'
         )
         model = Title
+
+
+class EmailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('email',)
+        model = User
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
+    confirmation_code = serializers.CharField(required=True)
+
+    class Meta:
+        fields = ('email', 'confirmation_code')
+        model = User
