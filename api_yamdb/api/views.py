@@ -1,24 +1,18 @@
 from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status, filters, mixins, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import (
-    Review, Title, User,
-    Genre, Category, Title
-)
-from .serializers import (
-    ReviewSerializer, CommentSerializer,
-    UserSerializer, GenreSerializer, CategorySerializer,
-    TitleReadSerializer, TitleWriteSerializer
-)
-from .permissions import (
-    IsAuthorModeratorAdminOrReadOnly,
-    IsAdmin, IsAdminOrReadOnly
-)
 from .filters import TitleFilter
+from .models import Category, Comment, Genre, Review, Title, User
+from .permissions import (IsAdmin, IsAdminOrReadOnly,
+                          IsAuthorModeratorAdminOrReadOnly)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, ReviewSerializer,
+                          TitleReadSerializer, TitleWriteSerializer,
+                          UserSerializer)
 
 
 class CreateListViewSet(mixins.CreateModelMixin,
@@ -123,8 +117,11 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         review = get_object_or_404(Review, id=self.kwargs['review_id'])
-        return review.comments.all()
+        title = get_object_or_404(Title, id=self.kwargs['title_id'])
+        queryset = Comment.objects.filter(review=review, title=title)
+        return queryset
 
     def perform_create(self, serializer):
         review = get_object_or_404(Review, id=self.kwargs['review_id'])
-        serializer.save(author=self.request.user, review=review)
+        title = get_object_or_404(Title, id=self.kwargs['title_id'])
+        serializer.save(author=self.request.user, review=review, title=title)
