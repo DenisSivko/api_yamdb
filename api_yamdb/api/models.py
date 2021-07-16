@@ -32,6 +32,9 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ('name',)
+
 
 class Category(models.Model):
     name = models.CharField(max_length=50, verbose_name='Название категории')
@@ -39,6 +42,9 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ('name',)
 
 
 class Title(models.Model):
@@ -54,6 +60,9 @@ class Title(models.Model):
         related_name='titles', blank=True,
         null=True, verbose_name='Категория'
     )
+
+    class Meta:
+        ordering = ('year',)
 
 
 class Review(models.Model):

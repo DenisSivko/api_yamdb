@@ -1,38 +1,23 @@
-from django.db.models import Avg, F
-from django.shortcuts import get_object_or_404
-from rest_framework import filters, mixins, permissions, status, viewsets
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.pagination import PageNumberPagination
-from rest_framework_simplejwt.tokens import AccessToken
-from django.core.mail import send_mail
 import random
 import string
 
-
-from .models import (
-    Review, Title, User,
-    Genre, Category, Title
-)
-from .serializers import (
-    ReviewSerializer, CommentSerializer,
-    UserSerializer, GenreSerializer, CategorySerializer,
-    TitleReadSerializer, TitleWriteSerializer,
-    EmailSerializer, TokenSerializer
-)
-from .permissions import (
-    IsAuthorModeratorAdminOrReadOnly,
-    IsAdmin, IsAdminOrReadOnly
-)
+from django.core.mail import send_mail
+from django.db.models import Avg, F
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, mixins, permissions, status, viewsets
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken
 
 from .filters import TitleFilter
 from .models import Category, Comment, Genre, Review, Title, User
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorModeratorAdminOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer,
+                          EmailSerializer, GenreSerializer, ReviewSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
-                          UserSerializer)
+                          TokenSerializer, UserSerializer)
 
 
 class CreateListViewSet(mixins.CreateModelMixin,
@@ -42,8 +27,18 @@ class CreateListViewSet(mixins.CreateModelMixin,
     pass
 
 
-def create_username_from_email(email):
-    return email.split('@')[0]
+def generate_username_from_email(email):
+    username = email.split('@')[0]
+    if User.objects.filter(username=username).exists():
+        return email
+    return username
+
+
+def generate_confirmation_code():
+    return ''.join(
+        [random.choice(
+            string.ascii_letters + string.digits
+        ) for n in range(8)])
 
 
 class SendConfirmationCode(APIView):
@@ -53,14 +48,10 @@ class SendConfirmationCode(APIView):
         serializer = EmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data.get('email')
-        confirmation_code = ''.join(
-            [random.choice(
-                string.ascii_letters + string.digits
-            ) for n in range(8)]
-        )
+        confirmation_code = generate_confirmation_code()
         User.objects.create(
             email=email, confirmation_code=confirmation_code,
-            username=create_username_from_email(email),
+            username=generate_username_from_email(email),
             is_active=False
         )
         send_mail(
@@ -158,11 +149,11 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     permission_classes = [IsAdminOrReadOnly]
     pagination_class = PageNumberPagination
-    filter_class = TitleFilter
+    filterset_class = TitleFilter
 
     def get_queryset(self):
         return super().get_queryset().annotate(
-            rating=Avg(F('reviews__score')))
+            rating=Avg(F('reviews__score'))).order_by('year')
 
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH'):
