@@ -1,11 +1,13 @@
-from rest_framework.decorators import action, api_view
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
+
+from api_yamdb.settings import DEFAULT_FROM_EMAIL
 
 from .filters import TitleFilter
 from .models import Category, Genre, Review, Title, User
@@ -15,9 +17,6 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           EmailSerializer, GenreSerializer, ReviewSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
                           TokenSerializer, UserSerializer)
-from api_yamdb.settings import (
-    DEFAULT_FROM_EMAIL
-)
 
 
 class CreateListDestroyViewSet(mixins.CreateModelMixin,
