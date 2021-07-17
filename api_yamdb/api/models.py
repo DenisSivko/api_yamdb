@@ -104,7 +104,7 @@ class Review(models.Model):
         'Дата публикации отзыва', auto_now_add=True
     )
     title = models.ForeignKey(
-        Title, on_delete=models.CASCADE,
+        Title, on_delete=models.CASCADE, null=True,
         related_name='reviews', verbose_name='Произведение'
     )
 
@@ -119,7 +119,7 @@ class Review(models.Model):
 
 class Comment(models.Model):
     title = models.ForeignKey(
-        Title, on_delete=models.CASCADE,
+        Title, on_delete=models.CASCADE, null=True,
         related_name="comments", verbose_name='Произведение'
     )
     review = models.ForeignKey(

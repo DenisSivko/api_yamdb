@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from .filters import TitleFilter
-from .models import Category, Comment, Genre, Review, Title, User
+from .models import Category, Genre, Review, Title, User
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorModeratorAdminOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -152,6 +152,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         return review.comments.all()
 
     def perform_create(self, serializer):
-        review = get_object_or_404(Review, id=self.kwargs['review_id'])
-        title = get_object_or_404(Title, id=self.kwargs['title_id'])
-        serializer.save(author=self.request.user, review=review, title=title)
+        review = get_object_or_404(
+            Review, id=self.kwargs['review_id'],
+            title__id=self.kwargs['title_id']
+        )
+        serializer.save(author=self.request.user, review=review)
