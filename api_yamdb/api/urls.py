@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (CategoryViewSet, CommentViewSet, GenreViewSet,
                     ReviewViewSet, SendConfirmationCode, SendJwtToken,
-                    TitleViewSet, UserMe, UserViewSet)
+                    TitleViewSet, UserViewSet)
 
 router_v1 = DefaultRouter()
 router_v1.register(
@@ -32,12 +32,11 @@ router_v1.register(
 )
 
 auth_patterns = [
-    path('email/', SendConfirmationCode.as_view()),
-    path('token/', SendJwtToken.as_view()),
+    path('email/', SendConfirmationCode),
+    path('token/', SendJwtToken),
 ]
 
 urlpatterns = [
-    path('v1/users/me/', UserMe.as_view()),
     path('v1/', include(router_v1.urls)),
     path('v1/auth/', include(auth_patterns)),
 ]
