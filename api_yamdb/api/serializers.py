@@ -9,6 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'username', 'bio', 'email', 'role'
         )
         model = User
+        read_only_field = ('role',)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -17,7 +18,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, data):
-        if not self.context['request'].method == 'POST':
+        if self.context['request'].method != 'POST':
             return data
         user = self.context['request'].user
         title_id = self.context['view'].kwargs['title_id']
@@ -83,17 +84,10 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         model = Title
 
 
-class EmailSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        fields = ('email',)
-        model = User
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
 
 
-class TokenSerializer(serializers.ModelSerializer):
+class TokenSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     confirmation_code = serializers.CharField(required=True)
-
-    class Meta:
-        fields = ('email', 'confirmation_code')
-        model = User
