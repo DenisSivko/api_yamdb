@@ -1,15 +1,17 @@
-from datetime import datetime
-
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-CURRENT_YEAR = datetime.now().year
-USER_ROLE = (
-    ('user', 'user'),
-    ('moderator', 'moderator'),
-    ('admin', 'admin'),
-)
+from .validators import validate_year
+
+USER = 'user'
+ADMIN = 'admin'
+MODERATOR = 'moderator'
+USER_ROLE = [
+    (USER, 'user'),
+    (MODERATOR, 'moderator'),
+    (ADMIN, 'admin'),
+]
 
 
 class User(AbstractUser):
@@ -17,20 +19,20 @@ class User(AbstractUser):
     bio = models.TextField('О себе', blank=True, max_length=200)
     role = models.CharField(
         'Роль пользователя', max_length=50,
-        choices=USER_ROLE, default='user'
+        choices=USER_ROLE, default=USER
     )
 
     @property
     def is_user(self):
-        return self.role == 'user'
+        return self.role == USER
 
     @property
     def is_moderator(self):
-        return self.role == 'moderator'
+        return self.role == MODERATOR
 
     @property
     def is_admin(self):
-        return self.role == 'admin' or self.is_staff
+        return self.role == ADMIN or self.is_staff
 
     class Meta:
         ordering = ('username',)
@@ -67,10 +69,13 @@ class Category(models.Model):
 class Title(models.Model):
     name = models.CharField(max_length=50, verbose_name='Название')
     year = models.PositiveSmallIntegerField(
-        blank=True, verbose_name='Год выпуска',
-        db_index=True, validators=[MaxValueValidator(CURRENT_YEAR)],
+        blank=True, null=True, verbose_name='Год выпуска',
+        db_index=True, validators=[validate_year]
     )
-    description = models.TextField(max_length=200, verbose_name='Описание')
+    description = models.TextField(
+        blank=True, max_length=200,
+        verbose_name='Описание'
+    )
     genre = models.ManyToManyField(
         Genre, related_name='titles',
         blank=True, verbose_name='Жанр'
@@ -83,8 +88,8 @@ class Title(models.Model):
 
     class Meta:
         ordering = ('year',)
-        verbose_name = 'Название'
-        verbose_name_plural = 'Названия'
+        verbose_name = 'Произведение'
+        verbose_name_plural = 'Произведения'
 
     def __str__(self):
         return self.name[:15]
