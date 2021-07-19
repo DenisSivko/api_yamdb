@@ -4,7 +4,7 @@ from django.core.mail import send_mail
 from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -26,6 +26,7 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
 
 
 @api_view(['POST'])
+@permission_classes([permissions.AllowAny])
 def send_confirmation_code(request):
     serializer = EmailSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -49,6 +50,7 @@ def send_confirmation_code(request):
 
 
 @api_view(['POST'])
+@permission_classes([permissions.AllowAny])
 def send_jwt_token(request):
     serializer = TokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -74,7 +76,7 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
-    search_fields = ('username',)
+    search_fields = ('=username',)
 
     @action(methods=['patch', 'get'], detail=False,
             permission_classes=[permissions.IsAuthenticated])
@@ -96,7 +98,7 @@ class GenreViewSet(CreateListDestroyViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     lookup_field = 'slug'
-    search_fields = ('name',)
+    search_fields = ('=name',)
 
 
 class CategoryViewSet(CreateListDestroyViewSet):
@@ -105,7 +107,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     lookup_field = 'slug'
-    search_fields = ('name',)
+    search_fields = ('=name',)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
