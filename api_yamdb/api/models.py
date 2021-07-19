@@ -4,17 +4,17 @@ from django.db import models
 
 from .validators import validate_year
 
-USER = 'user'
-ADMIN = 'admin'
-MODERATOR = 'moderator'
-USER_ROLE = [
-    (USER, 'user'),
-    (MODERATOR, 'moderator'),
-    (ADMIN, 'admin'),
-]
-
 
 class User(AbstractUser):
+    USER = 'user'
+    ADMIN = 'admin'
+    MODERATOR = 'moderator'
+    USER_ROLE = [
+        (USER, 'user'),
+        (MODERATOR, 'moderator'),
+        (ADMIN, 'admin'),
+    ]
+
     email = models.EmailField('Почта пользователя', unique=True)
     bio = models.TextField('О себе', blank=True, max_length=200)
     role = models.CharField(
@@ -24,15 +24,15 @@ class User(AbstractUser):
 
     @property
     def is_user(self):
-        return self.role == USER
+        return self.role == self.USER
 
     @property
     def is_moderator(self):
-        return self.role == MODERATOR
+        return self.role == self.MODERATOR
 
     @property
     def is_admin(self):
-        return self.role == ADMIN or self.is_staff
+        return self.role == self.ADMIN or self.is_staff
 
     class Meta:
         ordering = ('username',)
