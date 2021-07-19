@@ -1,13 +1,12 @@
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db.models import Avg, F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, status, viewsets
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-
-from api_yamdb.settings import DEFAULT_FROM_EMAIL
 
 from .filters import TitleFilter
 from .models import Category, Genre, Review, Title, User
@@ -27,7 +26,8 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
 
 
 @api_view(['POST'])
-def SendConfirmationCode(request):
+@permission_classes([permissions.AllowAny])
+def send_confirmation_code(request):
     serializer = EmailSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     email = serializer.validated_data.get('email')
@@ -40,17 +40,18 @@ def SendConfirmationCode(request):
     send_mail(
         'Код подтверждения Yamdb',
         f'Ваш код подтверждения: {confirmation_code}',
-        DEFAULT_FROM_EMAIL,
+        settings.DEFAULT_FROM_EMAIL,
         [email]
     )
     return Response(
-        'Код подтверждения успешно отправлен!',
+        {'result': 'Код подтверждения успешно отправлен!'},
         status=status.HTTP_200_OK
     )
 
 
 @api_view(['POST'])
-def SendJwtToken(request):
+@permission_classes([permissions.AllowAny])
+def send_jwt_token(request):
     serializer = TokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     email = serializer.validated_data.get('email')
@@ -61,7 +62,7 @@ def SendJwtToken(request):
     if default_token_generator.check_token(user, confirmation_code):
         token = AccessToken.for_user(user)
         return Response(
-            {'token': f'{token}'}, status=status.HTTP_200_OK
+            {'token': str(token)}, status=status.HTTP_200_OK
         )
     return Response(
         {'confirmation_code': 'Неверный код подтверждения!'},
@@ -75,15 +76,17 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
-    search_fields = ['user__username', ]
+    search_fields = ('=username',)
 
     @action(methods=['patch', 'get'], detail=False,
             permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         user = self.request.user
-        serializer = UserSerializer(user)
+        serializer = self.get_serializer(user)
         if self.request.method == 'PATCH':
-            serializer = UserSerializer(user, data=request.data, partial=True)
+            serializer = self.get_serializer(
+                user, data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save(role=user.role)
         return Response(serializer.data)
@@ -95,7 +98,7 @@ class GenreViewSet(CreateListDestroyViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     lookup_field = 'slug'
-    search_fields = ['name', ]
+    search_fields = ('=name',)
 
 
 class CategoryViewSet(CreateListDestroyViewSet):
@@ -104,13 +107,13 @@ class CategoryViewSet(CreateListDestroyViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     lookup_field = 'slug'
-    search_fields = ['name', ]
+    search_fields = ('=name',)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg(F('reviews__score'))
-    ).order_by('year')
+    )
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = TitleFilter
 
